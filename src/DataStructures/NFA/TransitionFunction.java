@@ -1,24 +1,31 @@
 package DataStructures.NFA;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-
 class TransitionFunction {
 
-    private HashSet<Character> conditions;
+    private char condition;
+    private State currentState;
     private State nextState;
 
-    public TransitionFunction(HashSet<Character> conditions, State nextState) {
-        this.conditions = conditions;
+    public TransitionFunction(State currentState, char condition, State nextState) {
+        this.currentState = currentState;
+        this.condition = condition;
         this.nextState = nextState;
     }
 
-    public HashSet<Character> getConditions() {
-        return conditions;
+    public char getCondition() {
+        return condition;
     }
 
-    public void setConditions(HashSet<Character> conditions) {
-        this.conditions = conditions;
+    public void setCondition(char condition) {
+        this.condition = condition;
+    }
+
+    public State getCurrentState() {
+        return currentState;
+    }
+
+    public void setCurrentState(State currentState) {
+        this.currentState = currentState;
     }
 
     public State getNextState() {
@@ -31,6 +38,6 @@ class TransitionFunction {
 
     @Override
     public String toString() {
-        return conditions + "->" + nextState;
+        return condition + "->" + nextState;
     }
 }

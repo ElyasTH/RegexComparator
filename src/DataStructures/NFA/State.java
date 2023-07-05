@@ -1,23 +1,21 @@
 package DataStructures.NFA;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
 class State {
 
     private int stateId;
-    private HashSet<TransitionFunction> transitions;
-    private boolean isInitial;
-    private boolean isFinal;
+    private HashSet<TransitionFunction> transitions = new HashSet<>();
 
-    public State(int stateId) {
-        this.stateId = stateId;
+    public TransitionFunction addTransition(char condition, State nextState){
+        TransitionFunction newTransition = new TransitionFunction(this, condition, nextState);
+        this.transitions.add(newTransition);
+        return newTransition;
     }
 
-    public TransitionFunction addTransition(HashSet<Character> conditions, State nextState){
-        TransitionFunction newTransition = new TransitionFunction(conditions, nextState);
-        transitions.add(newTransition);
-        return newTransition;
+    public void addTransition(TransitionFunction transition){
+        this.transitions.add(transition);
+        transition.setCurrentState(this);
     }
 
     public int getStateId() {
@@ -36,24 +34,8 @@ class State {
         this.transitions = transitions;
     }
 
-    public boolean isInitial() {
-        return isInitial;
-    }
-
-    public void setInitial(boolean initial) {
-        isInitial = initial;
-    }
-
-    public boolean isFinal() {
-        return isFinal;
-    }
-
-    public void setFinal(boolean aFinal) {
-        isFinal = aFinal;
-    }
-
     @Override
     public String toString() {
-        return "q" + stateId + "isInitial: " + isInitial + "isFinal: " + isFinal;
+        return "q" + stateId;
     }
 }

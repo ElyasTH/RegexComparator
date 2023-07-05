@@ -1,9 +1,12 @@
 import DataStructures.NFA.NFA;
 
+import java.util.Scanner;
+
 public class Main {
 
     public static void main(String[] args){
-        NFA nfa = new NFA();
-        System.out.println(nfa);
+        Scanner scanner = new Scanner(System.in);
+        NFA nfa = NFA.fromRegex(scanner.next());
+        NFA.print(nfa);
     }
 }
