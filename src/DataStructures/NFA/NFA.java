@@ -1,13 +1,14 @@
 package DataStructures.NFA;
 
+import DataStructures.State;
+import DataStructures.TransitionFunction;
+
 import java.util.*;
 
 public class NFA {
-
     private State initialState;
     private State finalState;
     private final HashSet<State> states = new HashSet<>();
-
     public void addState(State newState){
         this.states.add(newState);
     }
@@ -44,7 +45,7 @@ public class NFA {
                 newNFA.setInitialState(initialState);
                 newNFA.setFinalState(finalState);
 
-                initialState.addTransition(c, finalState);
+                initialState.addTransition(String.valueOf(c), finalState);
 
                 operandStack.push(newNFA);
                 if (concatFlag){ // concat this w/ previous
@@ -143,7 +144,24 @@ public class NFA {
             }
         }
 
-        return operandStack.pop();
+        NFA result = operandStack.pop();
+        ArrayList<State> resultStates = new ArrayList<>(result.getStates());
+        for(int i = 0; i < resultStates.size(); i++){
+            resultStates.get(i).setStateId(i);
+        }
+
+        HashSet<State> nfaStates = new HashSet<>();
+        while (nfaStates.size() != result.getStates().size()) {
+            for (State state : result.getStates()) {
+                for (TransitionFunction transition : state.getTransitions()) {
+                    nfaStates.add(transition.getCurrentState());
+                    nfaStates.add(transition.getNextState());
+                }
+            }
+            result.getStates().addAll(nfaStates);
+        }
+
+        return result;
     }
 
     public static NFA concat(NFA nfa1, NFA nfa2) {
@@ -173,10 +191,10 @@ public class NFA {
         result.setFinalState(finalState);
         result.setInitialState(initialState);
 
-        initialState.addTransition('λ', nfa1.initialState);
-        initialState.addTransition('λ', nfa2.initialState);
-        nfa1.getFinalState().addTransition('λ', finalState);
-        nfa2.getFinalState().addTransition('λ', finalState);
+        initialState.addTransition("lambda", nfa1.initialState);
+        initialState.addTransition("lambda", nfa2.initialState);
+        nfa1.getFinalState().addTransition("lambda", finalState);
+        nfa2.getFinalState().addTransition("lambda", finalState);
 
         for (State state: nfa1.states){
             result.addState(state);
@@ -198,14 +216,26 @@ public class NFA {
         result.setInitialState(initialState);
         result.setFinalState(finalState);
 
-        result.getInitialState().addTransition('λ', result.getFinalState());
-        result.getFinalState().addTransition('λ', result.getInitialState());
-
-        result.getInitialState().addTransition('λ', nfa.getInitialState());
-        nfa.getFinalState().addTransition('λ', result.getFinalState());
+        result.getInitialState().addTransition("lambda", nfa.getInitialState());
+        nfa.getFinalState().addTransition("lambda", result.getFinalState());
+        result.getInitialState().addTransition("lambda", result.getFinalState());
+        result.getFinalState().addTransition("lambda", result.getInitialState());
 
         for (State state: nfa.getStates()){
             result.addState(state);
+        }
+
+        return result;
+    }
+
+    public static HashSet<Character> getAlphabet(NFA nfa){
+        HashSet<Character> result = new HashSet<>();
+
+        for (State state: nfa.getStates()){
+            for (TransitionFunction transition: state.getTransitions()){
+                if (!transition.getCondition().equals("lambda"))
+                    result.add(transition.getCondition().charAt(0));
+            }
         }
 
         return result;

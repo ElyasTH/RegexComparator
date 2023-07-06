@@ -1,13 +1,13 @@
-package DataStructures.NFA;
+package DataStructures;
 
 import java.util.HashSet;
 
-class State {
+public class State {
 
     private int stateId;
     private HashSet<TransitionFunction> transitions = new HashSet<>();
 
-    public TransitionFunction addTransition(char condition, State nextState){
+    public TransitionFunction addTransition(String condition, State nextState){
         TransitionFunction newTransition = new TransitionFunction(this, condition, nextState);
         this.transitions.add(newTransition);
         return newTransition;
@@ -33,7 +33,6 @@ class State {
     public void setTransitions(HashSet<TransitionFunction> transitions) {
         this.transitions = transitions;
     }
-
     @Override
     public String toString() {
         return "q" + stateId;
