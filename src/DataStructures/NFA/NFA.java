@@ -2,6 +2,7 @@ package DataStructures.NFA;
 
 import DataStructures.State;
 import DataStructures.TransitionFunction;
+import Utils.PostFixGenerator;
 
 import java.util.*;
 
@@ -9,6 +10,22 @@ public class NFA {
     private State initialState;
     private State finalState;
     private final HashSet<State> states = new HashSet<>();
+
+    public NFA(){
+    }
+
+    public NFA(char c){
+
+        State initialState = new State(), finalState = new State();
+
+        setInitialState(initialState);
+        setFinalState(finalState);
+        addState(initialState);
+        addState(finalState);
+
+        initialState.addTransition(String.valueOf(c), finalState);
+
+    }
     public void addState(State newState){
         this.states.add(newState);
     }
@@ -24,144 +41,54 @@ public class NFA {
     }
 
     public static NFA fromRegex(String regex){
-        Stack<Character> operatorStack = new Stack<>();
-        Stack<NFA> operandStack = new Stack<>();
-        Stack<NFA> concatStack = new Stack<>();
-
-        boolean concatFlag = false;
-        char op;
-        int parenthesisCount = 0;
-        NFA nfa1, nfa2;
-
-        for (char c: regex.toCharArray()){
-
-            if (Character.isLetter(c) || Character.isDigit(c)){
-
-                NFA newNFA = new NFA();
-
-                State initialState = new State(), finalState = new State();
-                newNFA.addState(initialState);
-                newNFA.addState(finalState);
-                newNFA.setInitialState(initialState);
-                newNFA.setFinalState(finalState);
-
-                initialState.addTransition(String.valueOf(c), finalState);
-
-                operandStack.push(newNFA);
-                if (concatFlag){ // concat this w/ previous
-                    operatorStack.push('.'); // '.' used to represent concat.
+        String postfix = PostFixGenerator.generate(regex);
+        NFA nfa = null, temp, right, left;
+        char[] ch = postfix.toCharArray();
+        Stack<NFA> stack = new Stack<>();
+        for (char c : ch) {
+            switch (c) {
+                case '+' -> {
+                    right = stack.pop();
+                    left = stack.pop();
+                    nfa = union(left, right);
+                    stack.push(nfa);
                 }
-                else
-                    concatFlag = true;
-            }
-            else{
-                if (c == ')'){
-                    concatFlag = false;
-                    if (parenthesisCount == 0){
-                        System.out.println("Error: More end parenthesis "+
-                                "than beginning parenthesis");
-                        System.exit(1);
-                    }
-                    else{ parenthesisCount--;}
-                    // process stuff on stack till '('
-                    while (!operatorStack.empty() && operatorStack.peek() != '('){
-                        op = operatorStack.pop();
-                        if (op == '.'){
-                            nfa2 = operandStack.pop();
-                            nfa1 = operandStack.pop();
-                            operandStack.push(concat(nfa1, nfa2));
-                        }
-                        else if (op == '+'){
-                            nfa2 = operandStack.pop();
-
-                            if(!operatorStack.empty() &&
-                                    operatorStack.peek() == '.'){
-
-                                concatStack.push(operandStack.pop());
-                                while (!operatorStack.empty() &&
-                                        operatorStack.peek() == '.'){
-
-                                    concatStack.push(operandStack.pop());
-                                    operatorStack.pop();
-                                }
-                                nfa1 = concat(concatStack.pop(),
-                                        concatStack.pop());
-                                while (concatStack.size() > 0){
-                                    nfa1 = concat(nfa1, concatStack.pop());
-                                }
-                            }
-                            else{
-                                nfa1 = operandStack.pop();
-                            }
-                            operandStack.push(union(nfa1, nfa2));
-                        }
-                    }
+                case '*' -> {
+                    temp = stack.pop();
+                    nfa = kleene(temp);
+                    stack.push(nfa);
                 }
-                else if (c == '*'){
-                    operandStack.push(kleene(operandStack.pop()));
-                    concatFlag = true;
+                case '.' -> {
+                    right = stack.pop();
+                    left = stack.pop();
+                    nfa = concat(left, right);
+                    stack.push(nfa);
                 }
-                else if (c == '('){ // if any other operator: push
-                    operatorStack.push(c);
-                    parenthesisCount++;
-                }
-                else if (c == '+'){
-                    operatorStack.push(c);
-                    concatFlag = false;
+                default -> {
+                    nfa = new NFA(c);
+                    stack.push(nfa);
                 }
             }
         }
-        while (operatorStack.size() > 0){
-            if (operandStack.empty()){
-                System.out.println("Error: imbalance in operandStack and "
-                        + "operatorStack");
-                System.exit(1);
-            }
-            op = operatorStack.pop();
-            if (op == '.'){
-                nfa2 = operandStack.pop();
-                nfa1 = operandStack.pop();
-                operandStack.push(concat(nfa1, nfa2));
-            }
-            else if (op == '+'){
-                nfa2 = operandStack.pop();
-                if( !operatorStack.empty() && operatorStack.peek() == '.'){
-                    concatStack.push(operandStack.pop());
-                    while (!operatorStack.empty() && operatorStack.peek() == '.'){
-                        concatStack.push(operandStack.pop());
-                        operatorStack.pop();
-                    }
-                    nfa1 = concat(concatStack.pop(),
-                            concatStack.pop());
-                    while (concatStack.size() > 0){
-                        nfa1 =  concat(nfa1, concatStack.pop());
-                    }
-                }
-                else{
-                    nfa1 = operandStack.pop();
-                }
-                operandStack.push(union(nfa1, nfa2));
-            }
-        }
 
-        NFA result = operandStack.pop();
-        ArrayList<State> resultStates = new ArrayList<>(result.getStates());
+
+        assert nfa != null;
+        ArrayList<State> resultStates = new ArrayList<>(nfa.getStates());
         for(int i = 0; i < resultStates.size(); i++){
             resultStates.get(i).setStateId(i);
         }
 
         HashSet<State> nfaStates = new HashSet<>();
-        while (nfaStates.size() != result.getStates().size()) {
-            for (State state : result.getStates()) {
+        while (nfaStates.size() != nfa.getStates().size()) {
+            for (State state : nfa.getStates()) {
                 for (TransitionFunction transition : state.getTransitions()) {
                     nfaStates.add(transition.getCurrentState());
                     nfaStates.add(transition.getNextState());
                 }
             }
-            result.getStates().addAll(nfaStates);
+            nfa.getStates().addAll(nfaStates);
         }
-
-        return result;
+        return nfa;
     }
 
     public static NFA concat(NFA nfa1, NFA nfa2) {
