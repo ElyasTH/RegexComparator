@@ -35,6 +35,13 @@ public class State {
         return transitions;
     }
 
+    public TransitionFunction getTransitionByCondition(String condition){
+        for (TransitionFunction transition: transitions){
+            if (transition.getCondition().equals(condition)) return transition;
+        }
+        return null;
+    }
+
     public void setTransitions(HashSet<TransitionFunction> transitions) {
         this.transitions = transitions;
     }

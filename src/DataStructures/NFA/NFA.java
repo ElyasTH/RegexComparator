@@ -10,6 +10,7 @@ public class NFA {
     private State initialState;
     private State finalState;
     private final HashSet<State> states = new HashSet<>();
+    private HashSet<Character> alphabet;
 
     public NFA(){
     }
@@ -88,6 +89,16 @@ public class NFA {
             }
             nfa.getStates().addAll(nfaStates);
         }
+
+        HashSet<Character> alphabet = new HashSet<>();
+        for (State state: nfa.getStates()){
+            for (TransitionFunction transition: state.getTransitions()){
+                if (!transition.getCondition().equals("lambda"))
+                    alphabet.add(transition.getCondition().charAt(0));
+            }
+        }
+        nfa.alphabet = alphabet;
+
         return nfa;
     }
 
@@ -155,17 +166,8 @@ public class NFA {
         return result;
     }
 
-    public static HashSet<Character> getAlphabet(NFA nfa){
-        HashSet<Character> result = new HashSet<>();
-
-        for (State state: nfa.getStates()){
-            for (TransitionFunction transition: state.getTransitions()){
-                if (!transition.getCondition().equals("lambda"))
-                    result.add(transition.getCondition().charAt(0));
-            }
-        }
-
-        return result;
+    public HashSet<Character> getAlphabet(){
+        return this.alphabet;
     }
 
     public static void print(NFA nfa){

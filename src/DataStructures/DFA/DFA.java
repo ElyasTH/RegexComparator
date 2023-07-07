@@ -3,6 +3,7 @@ package DataStructures.DFA;
 import DataStructures.NFA.NFA;
 import DataStructures.State;
 import DataStructures.TransitionFunction;
+import Utils.StatePair;
 
 import java.util.*;
 
@@ -14,10 +15,11 @@ public class DFA {
     private HashSet<State> minimizedStates = new HashSet<>();
     private State minimizedInitialState;
     private HashSet<State> minimizedFinalStates = new HashSet<>();
+    private HashSet<Character> alphabet;
 
     public static DFA fromNFA(NFA nfa){
         DFA result = new DFA();
-        HashSet<Character> alphabet = NFA.getAlphabet(nfa);
+        result.alphabet = nfa.getAlphabet();
 
         MultiState initial = new MultiState();
         initial.addStates(getLambdaConnectedStates(nfa.getInitialState()));
@@ -27,7 +29,7 @@ public class DFA {
         HashSet<MultiState> visitedStates = new HashSet<>();
 
         MultiState trapState = new MultiState();
-        for (char c1 : alphabet) {
+        for (char c1 : result.alphabet) {
             trapState.addTransition(new TransitionFunction(trapState, String.valueOf(c1), trapState));
         }
         boolean hasTrap = false;
@@ -66,7 +68,7 @@ public class DFA {
                     if (condition != null) stateAlphabet.add(condition.charAt(0));
                 }
 
-                for (char c : alphabet) {
+                for (char c : result.alphabet) {
                     if (!stateAlphabet.contains(c)) {
                         hasTrap = true;
                         state.addTransition(new TransitionFunction(state, String.valueOf(c), trapState));
@@ -81,7 +83,6 @@ public class DFA {
         }
 
         if (hasTrap) result.addState(trapState);
-
         return result;
     }
     public static HashSet<State> getLambdaConnectedStates(State state){
@@ -229,6 +230,54 @@ public class DFA {
 
         return true;
 
+    }
+
+    public boolean equals(DFA other){
+
+        if (!this.alphabet.equals(other.alphabet)) return false;
+
+        this.minimize();
+        other.minimize();
+
+        if (this.minimizedStates.size() != other.minimizedStates.size()){
+            return false;
+        }
+
+        HashSet<State> matchedStates = new HashSet<>();
+        ArrayList<StatePair> statePairs = new ArrayList<>();
+
+        statePairs.add(new StatePair(this.minimizedInitialState, other.minimizedInitialState));
+        matchedStates.add(this.minimizedInitialState);
+        matchedStates.add(other.minimizedInitialState);
+
+        int lastUnCheckedIndex = 0;
+        while (true) {
+
+            StatePair statePair = statePairs.get(lastUnCheckedIndex);
+            if ((minimizedFinalStates.contains(statePair.getState1()) && !other.minimizedFinalStates.contains(statePair.getState2())) ||
+                    (!minimizedFinalStates.contains(statePair.getState1()) && other.minimizedFinalStates.contains(statePair.getState2()))) {
+                return false;
+            }
+
+            transLoop: for (TransitionFunction transition: statePair.getState1().getTransitions()){
+
+                State state1 = transition.getNextState();
+                State state2 = statePair.getState2().getTransitionByCondition(transition.getCondition()).getNextState();
+                StatePair newPair = new StatePair(state1, state2);
+
+                for (StatePair sp: statePairs){
+                    if (sp.equals(newPair)) continue transLoop;
+                }
+
+                if (matchedStates.contains(state1) || matchedStates.contains(state2)) return false;
+
+                statePairs.add(newPair);
+                matchedStates.add(state1);
+                matchedStates.add(state2);
+            }
+            lastUnCheckedIndex++;
+            if (lastUnCheckedIndex >= statePairs.size()) return true;
+        }
     }
     public void addState(MultiState state){
         states.add(state);
