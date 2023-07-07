@@ -32,8 +32,6 @@ public class PostFixGenerator {
                 }
             }
         }
-        System.out.println("postfix:" + out_string);
-        System.out.println();
         return out_string;
     }
 

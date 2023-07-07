@@ -12,15 +12,19 @@ public class Main {
         System.out.print("Enter Regex1: ");
         NFA nfa1 = NFA.fromRegex(scanner.next());
         DFA dfa1 = DFA.fromNFA(nfa1);
+        System.out.println();
         System.out.print("Enter Regex2: ");
         NFA nfa2 = NFA.fromRegex(scanner.next());
         DFA dfa2 = DFA.fromNFA(nfa2);
+        System.out.println();
         boolean equal = dfa1.equals(dfa2);
 
         System.out.println("Regex1 Minimized DFA: ");
         dfa1.printMinimized();
+        System.out.println();
         System.out.println("Regex2 Minimized DFA: ");
         dfa2.printMinimized();
+        System.out.println();
 
         if (equal) System.out.println("Regex1 & Regex2 are equal.");
         else System.out.println("Regex1 & Regex2 are not equal.");

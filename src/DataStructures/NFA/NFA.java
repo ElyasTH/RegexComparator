@@ -24,7 +24,8 @@ public class NFA {
         addState(initialState);
         addState(finalState);
 
-        initialState.addTransition(String.valueOf(c), finalState);
+        if (c == 'L') initialState.addTransition("lambda", finalState);
+        else initialState.addTransition(String.valueOf(c), finalState);
 
     }
     public void addState(State newState){
