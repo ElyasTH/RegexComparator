@@ -11,10 +11,13 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter Regex: ");
         NFA nfa = NFA.fromRegex(scanner.next());
-        System.out.println("NFA:");
-        NFA.print(nfa);
+//        System.out.println("NFA:");
+//        NFA.print(nfa);
         DFA dfa = DFA.fromNFA(nfa);
-        System.out.println("DFA:");
-        dfa.print();
+//        System.out.println("DFA:");
+//        dfa.print();
+//        System.out.println("Minimized DFA:");
+        dfa.minimize();
+        dfa.printMinimized();
     }
 }

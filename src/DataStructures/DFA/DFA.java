@@ -11,6 +11,9 @@ public class DFA {
     private HashSet<MultiState> states = new HashSet<>();
     private MultiState initialState;
     private HashSet<MultiState> finalStates = new HashSet<>();
+    private HashSet<State> minimizedStates = new HashSet<>();
+    private State minimizedInitialState;
+    private HashSet<State> minimizedFinalStates = new HashSet<>();
 
     public static DFA fromNFA(NFA nfa){
         DFA result = new DFA();
@@ -100,6 +103,133 @@ public class DFA {
         return result;
 
     }
+
+    public void minimize() {
+
+        HashSet<HashSet<MultiState>> minSets = new HashSet<>();
+        minSets.add(finalStates);
+        HashSet<MultiState> nonFinalStates = new HashSet<>(states);
+        nonFinalStates.removeAll(finalStates);
+        minSets.add(nonFinalStates);
+
+        boolean repeat = true;
+        while(repeat) {
+            HashSet<HashSet<MultiState>> newMinSets = new HashSet<>();
+
+            for (HashSet<MultiState> minSet : minSets) {
+                stateLoop: for (MultiState state : minSet) {
+
+                    for (HashSet<MultiState> newMinSet: newMinSets){
+                        if (newMinSet.contains(state)) continue stateLoop;
+                    }
+
+                    HashSet<MultiState> stateIndistSet = new HashSet<>();
+                    stateIndistSet.add(state);
+                    for (MultiState state2: minSet){
+                        if (state == state2) continue;
+                        if (checkIndistinguishability(minSets, state, state2))
+                            stateIndistSet.add(state2);
+                    }
+                    newMinSets.add(stateIndistSet);
+
+                }
+            }
+
+            if (newMinSets.size() == minSets.size()) {
+                repeat = false;
+                Loop1:
+                for (HashSet<MultiState> newMinSet : newMinSets) {
+                    for (HashSet<MultiState> minSet : minSets) {
+                        if (newMinSet.containsAll(minSet)) {
+                            continue Loop1;
+                        }
+                    }
+                    repeat = true;
+                }
+            }
+            minSets = newMinSets;
+        }
+
+        ArrayList<State> newStates = new ArrayList<>();
+        ArrayList<HashSet<MultiState>> minSetsArray = new ArrayList<>(minSets);
+
+        HashSet<MultiState> newInitialState = null;
+        for (HashSet<MultiState> multiStates: minSetsArray){
+            if (multiStates.contains(initialState) && minSetsArray.indexOf(multiStates) != 0){
+                newInitialState = multiStates;
+            }
+        }
+        if (newInitialState != null){
+            minSetsArray.remove(newInitialState);
+            minSetsArray.add(minSetsArray.get(0));
+            minSetsArray.set(0, newInitialState);
+        }
+
+        for (int i = 0; i < minSetsArray.size(); i++){
+            newStates.add(new State(i));
+        }
+
+        for (HashSet<MultiState> multiStates: minSetsArray){
+            int index = minSetsArray.indexOf(multiStates);
+            for (MultiState multiState: multiStates){
+                for (TransitionFunction transition: multiState.getTransitions()){
+                    for (HashSet<MultiState> multiStates1: minSetsArray){
+                        if (multiStates1.contains(transition.getNextMultiState())){
+                            newStates.get(index).addTransition(transition.getCondition(), newStates.get(minSetsArray.indexOf(multiStates1)));
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        for (HashSet<MultiState> multiStates: minSetsArray){
+            for (MultiState multiState: multiStates){
+                if (finalStates.contains(multiState)){
+                    minimizedFinalStates.add(newStates.get(minSetsArray.indexOf(multiStates)));
+                    break;
+                }
+            }
+        }
+
+        outerLoop: for (HashSet<MultiState> multiStates: minSetsArray){
+            for (MultiState multiState: multiStates){
+                if (initialState == multiState){
+                    minimizedInitialState = newStates.get(minSetsArray.indexOf(multiStates));
+                    break outerLoop;
+                }
+            }
+        }
+
+        minimizedStates = new HashSet<>();
+        minimizedStates.addAll(newStates);
+
+    }
+
+    private boolean checkIndistinguishability(HashSet<HashSet<MultiState>> totalSet, MultiState state1, MultiState state2){
+
+        for (TransitionFunction transition1: state1.getTransitions()){
+
+            HashSet<MultiState> checkSet = null;
+            for (HashSet<MultiState> set: totalSet){
+                if (set.contains(transition1.getNextMultiState())){
+                    checkSet = set;
+                    break;
+                }
+            }
+
+            if (checkSet == null){
+                System.out.println("WTF?!");
+                return false;
+            }
+            TransitionFunction transition2 = state2.getTransitionByCondition(transition1.getCondition());
+            if (!checkSet.contains(transition2.getNextMultiState())) return false;
+
+        }
+
+        return true;
+
+    }
     public void addState(MultiState state){
         states.add(state);
     }
@@ -123,12 +253,28 @@ public class DFA {
             }
         }
 
-        System.out.println(statesArray.indexOf(getInitialState()));
+        System.out.println("Final State(s): ");
         for (MultiState finalState: getFinalStates()){
             System.out.print(statesArray.indexOf(finalState) + ",");
         }
+        System.out.println();
     }
+    public void printMinimized(){
 
+        for (State state: minimizedStates){
+            for (TransitionFunction transition: state.getTransitions()){
+                System.out.println("(" + transition.getCurrentState().getStateId() +
+                        "," + transition.getCondition() +
+                        "," + transition.getNextState().getStateId() + ")");
+            }
+        }
+        System.out.print("Final State(s): ");
+        for (State state: minimizedFinalStates){
+            System.out.print(state.getStateId() + ",");
+        }
+        System.out.println();
+
+    }
     public void addFinalState(MultiState state){
         finalStates.add(state);
     }

@@ -72,6 +72,13 @@ public class MultiState {
         this.transitions = transitions;
     }
 
+    public TransitionFunction getTransitionByCondition(String condition){
+        for (TransitionFunction transition: transitions){
+            if (transition.getCondition().equals(condition)) return transition;
+        }
+        return null;
+    }
+
     public boolean equals(MultiState other){
         return this.getStates().equals(other.getStates());
     }
